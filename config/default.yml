@@ -1,0 +1,7 @@
+backend:
+  CHIEF_BACKEND: "docker-compose"
+docker-compose:
+  path: /var/lib/chief
+mqtt:
+  CHIEF_MQTT_BROKER: localhost
+  CHIEF_MQTT_PORT: 1883

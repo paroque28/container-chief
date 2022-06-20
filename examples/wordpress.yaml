@@ -1,0 +1,4 @@
+services: 
+  wordpress:
+    compose_file: wordpress/docker-compose.yml
+    status: "pull"
