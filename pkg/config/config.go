@@ -10,8 +10,9 @@ type ClientConfigurations struct {
 }
 
 type DaemonConfigurations struct {
-	Mqtt    MqttConfigurations
-	Backend BackendConfigurations
+	Mqtt          MqttConfigurations
+	Backend       BackendConfigurations
+	DockerCompose DockerComposeConfigurations
 }
 
 type MqttConfigurations struct {
@@ -19,7 +20,11 @@ type MqttConfigurations struct {
 	CHIEF_MQTT_PORT   int
 }
 type BackendConfigurations struct {
-	CHIEF_BACKEND string
+	CHIEF_BACKEND   string
+	CHIEF_DEVICE_ID string
+}
+type DockerComposeConfigurations struct {
+	CHIEF_SERVICES_PATH string
 }
 
 func setupViper() {
@@ -36,6 +41,7 @@ func FetchDaemonConfiguration() (configuration DaemonConfigurations, err error) 
 		return configuration, err
 	}
 	viper.SetDefault("backend.CHIEF_BACKEND", "docker-compose")
+	viper.SetDefault("dockerCompose.CHIEF_SERVICES_PATH", "/var/lib/chief/servicess")
 	err = viper.Unmarshal(&configuration)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to unmarshal configuration")

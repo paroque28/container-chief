@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,18 +13,37 @@ import (
 )
 
 const (
-	ConfigurationsTopic = "chief/configuration"
-	QoS                 = 1
+	DevicesTopic = "chief/devices/"
+	QoS          = 1
 )
 
-type Service struct {
-	ComposeFile string          `yaml:"compose_file" json:"compose_file"`
-	Compose     compose.Project `yaml:"compose" json:"compose"`
-	Status      string          `yaml:"status" validate:"required" json:"status"`
+func GetConfigurationsTopic(device string) string {
+	return DevicesTopic + device + "/configurations"
+}
+
+type Project struct {
+	ComposeFile string `yaml:"compose_file" json:"compose_file"`
+	Compose     string `yaml:"compose" json:"compose"`
+	Status      string `yaml:"status" validate:"required" json:"status"`
 }
 
 type Configuration struct {
-	Services map[string]Service `yaml:"services" validate:"required" json:"services"`
+	Projects map[string]Project `yaml:"projects" validate:"required" json:"projects"`
+}
+
+func JsonToConfiguration(input []byte) (configuration Configuration, err error) {
+	var data map[string]interface{}
+	err = json.Unmarshal(input, &data)
+	if err != nil {
+		log.Error().Err(err).Str("input", string(input)).Msg("Failed to unmarshal JSON")
+	}
+	log.Debug().Interface("project", data).Msg("Parsing JSON")
+	if err := json.Unmarshal(input, &configuration); err != nil {
+		log.Error().Err(err).Str("input", string(input)).Msg("Failed to unmarshal JSON")
+		log.Info().Interface("input", configuration).Msg("Failed to unmarshal JSON")
+	}
+	log.Debug().Interface("configuration", configuration).Msg("Configuration")
+	return configuration, err
 }
 
 func ReadYaml(path string) (data Configuration, err error) {
@@ -44,13 +64,13 @@ func ReadYaml(path string) (data Configuration, err error) {
 	}
 	log.Debug().Interface("data", data).Str("input", string(file)).Msg("YAML file read")
 
-	for name, service := range data.Services {
-		if service.ComposeFile == "" {
-			log.Error().Str("input", service.ComposeFile).Msg("Compose file not specified")
+	for name, project := range data.Projects {
+		if project.ComposeFile == "" {
+			log.Error().Str("input", project.ComposeFile).Msg("Compose file not specified")
 			continue
 		}
-		composeFullPath := filepath.Join(baseDir, service.ComposeFile)
-		log.Info().Str("composeFullPath", composeFullPath).Str("composeFile", service.ComposeFile).Msg("Loading compose file")
+		composeFullPath := filepath.Join(baseDir, project.ComposeFile)
+		log.Info().Str("composeFullPath", composeFullPath).Str("composeFile", project.ComposeFile).Msg("Loading compose file")
 
 		var b []byte
 		b, err = os.ReadFile(composeFullPath)
@@ -58,9 +78,10 @@ func ReadYaml(path string) (data Configuration, err error) {
 			return
 		}
 		var files []compose.ConfigFile
-		files = append(files, compose.ConfigFile{Filename: service.ComposeFile, Content: b})
+		files = append(files, compose.ConfigFile{Filename: project.ComposeFile, Content: b})
 		envMap := make(map[string]string)
-		project, err := loader.Load(compose.ConfigDetails{
+		// Validate Compose FIle
+		_, err := loader.Load(compose.ConfigDetails{
 			WorkingDir:  baseDir,
 			ConfigFiles: files,
 			Environment: envMap,
@@ -72,9 +93,12 @@ func ReadYaml(path string) (data Configuration, err error) {
 		}
 
 		log.Debug().Interface("project", project).Msg("Project")
-
-		service.Compose = *project
-		data.Services[name] = service
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to marshal compose file")
+			return data, err
+		}
+		project.Compose = string(b)
+		data.Projects[name] = project
 	}
 	return data, err
 }

@@ -1,7 +1,8 @@
 backend:
   CHIEF_BACKEND: "docker-compose"
-docker-compose:
-  path: /var/lib/chief
+  CHIEF_DEVICE_ID: "device1"
+dockerCompose:
+  CHIEF_SERVICES_PATH: /var/lib/chief/services
 mqtt:
   CHIEF_MQTT_BROKER: localhost
   CHIEF_MQTT_PORT: 1883

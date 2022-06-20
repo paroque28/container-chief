@@ -2,6 +2,8 @@ package manager
 
 import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/paroque28/container-chief/pkg/config"
+	"github.com/paroque28/container-chief/pkg/messages"
 	"github.com/rs/zerolog/log"
 )
 
@@ -11,20 +13,25 @@ type Manager struct {
 	// kubernetesManager *KubernetesManager
 }
 
-func NewManager(backend string) (manager *Manager) {
-	manager = &Manager{backend: backend}
-	manager.composeManager = NewComposeManager()
+func NewManager(configuration config.DaemonConfigurations) (manager *Manager) {
+	manager = &Manager{backend: configuration.Backend.CHIEF_BACKEND}
+	manager.composeManager = NewComposeManager(configuration)
 	return manager
 }
 
 func (manager *Manager) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 	log.Info().Str("topic", string(msg.Topic())).Msg("Manager received message")
+	configuration, err := messages.JsonToConfiguration(msg.Payload())
+	if err != nil {
+		log.Err(err).Msg("Failed to parse message")
+		return
+	}
 	if manager.backend == "docker-compose" {
-		manager.composeManager.MessageHandler(client, msg)
+		manager.composeManager.MessageHandler(configuration)
 	} else if manager.backend == "kubernetes" {
-		log.Info().Str("payload", string(msg.Payload())).Msg("Not Implemented")
+		log.Error().Msg("Kubernetes not Implemented")
 	} else {
-		log.Info().Str("payload", string(msg.Payload())).Msg("Not Implemented")
+		log.Error().Msg("Not Implemented")
 	}
 
 }

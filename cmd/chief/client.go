@@ -40,6 +40,7 @@ func main() {
 	// Parser
 	parser := argparse.NewParser(filepath.Base(os.Args[0]), "Container Chief Client")
 	input := parser.String("i", "input", &argparse.Options{Required: true, Help: "Path to the input file"})
+	deviceid := parser.String("d", "device", &argparse.Options{Required: true, Help: "Device identifier"})
 	err = parser.Parse(os.Args)
 	if err != nil {
 		fmt.Print(parser.Usage(err))
@@ -63,5 +64,5 @@ func main() {
 	svr := new(server.Server)
 	svr.Connect(configuration.Mqtt.CHIEF_MQTT_BROKER, configuration.Mqtt.CHIEF_MQTT_PORT, nil, "client-"+uuid.New().String())
 
-	svr.Publish(messages.ConfigurationsTopic, messages.QoS, string(body))
+	svr.Publish(messages.GetConfigurationsTopic(*deviceid), messages.QoS, string(body))
 }

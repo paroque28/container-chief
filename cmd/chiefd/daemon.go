@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// Start Manager
-	mgr := manager.NewManager(configuration.Backend.CHIEF_BACKEND)
+	mgr := manager.NewManager(configuration)
 	messagePubHandler := func(client mqtt.Client, msg mqtt.Message) {
 		if msg == nil {
 			log.Error().Msg("Message is empty")
@@ -47,6 +47,6 @@ func main() {
 	svr := new(server.Server)
 	svr.Connect(configuration.Mqtt.CHIEF_MQTT_BROKER, configuration.Mqtt.CHIEF_MQTT_PORT, messagePubHandler, "client-"+uuid.New().String())
 
-	svr.Subscribe(messages.ConfigurationsTopic, messages.QoS, nil)
+	svr.Subscribe(messages.GetConfigurationsTopic(configuration.Backend.CHIEF_DEVICE_ID), messages.QoS, nil)
 	<-make(chan int)
 }
