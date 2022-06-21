@@ -54,26 +54,45 @@ func (manager *ComposeManager) MessageHandler(configuration messages.Configurati
 
 		if strings.Contains(service.Status, "up") {
 			// Start or update project
-			manager.StartProject(servicepath + "/docker-compose.yml")
-
+			err = manager.StartProject(servicepath + "/docker-compose.yml")
 		} else if strings.Contains(service.Status, "pull") {
 			// Pull project
-			manager.PullProject(servicepath + "/docker-compose.yml")
+			err = manager.PullProject(servicepath + "/docker-compose.yml")
+			err = manager.StopProject(servicepath + "/docker-compose.yml")
+		} else if strings.Contains(service.Status, "down") {
+			// Stop project
+			err = manager.StopProject(servicepath + "/docker-compose.yml")
 		} else {
 			log.Info().Str("service", service_name).Str("status", service.Status).Msg("Unknown status")
 		}
-
-		manager.removeOrphanProjects(services)
+		if err != nil {
+			log.Error().Err(err).Str("service", service_name).Str("status", service.Status).Msg("Failed to start service")
+			return err
+		}
 
 	}
+
+	err = manager.removeOrphanProjects(services, configuration.Projects)
 
 	return err
 
 }
 
-func (manager *ComposeManager) removeOrphanProjects(stack []api.Stack) (err error) {
+func (manager *ComposeManager) removeOrphanProjects(stack []api.Stack, projects map[string]messages.Project) (err error) {
 	for _, composeProject := range stack {
+		log.Info().Str("project", composeProject.Name).Msg("removeOrphanProjects")
+		for projectName := range projects {
+			if composeProject.Name == projectName {
+				continue
+			}
+		}
 		log.Info().Str("project", composeProject.Name).Msg("Remove orphan project")
+		err = manager.StopProject(composeProject.ConfigFiles)
+		err = manager.RemoveProject(composeProject.ConfigFiles)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to remove orphan project")
+			return err
+		}
 	}
 	return err
 }
@@ -110,6 +129,10 @@ func (manager *ComposeManager) readComposeFile(composeFile string) (project *typ
 			project.Services[i].CustomLabels = make(map[string]string)
 		}
 		project.Services[i].CustomLabels["chief.project"] = project.Name
+		project.Services[i].CustomLabels["com.docker.compose.project"] = project.Name
+		project.Services[i].CustomLabels["com.docker.compose.project.config_files"] = fullPath
+		project.Services[i].CustomLabels["com.docker.compose.project.working_dir"] = baseDir
+
 	}
 	log.Debug().Interface("project", project).Msg("readComposeFile")
 	return project, err
@@ -137,16 +160,49 @@ func (manager *ComposeManager) StartProject(composeFile string) (err error) {
 		log.Error().Err(err).Msg("Failed to read compose file")
 		return err
 	}
-	for _, s := range project.Services {
-		log.Info().Interface("customLabels", s.CustomLabels).Msg("Custom labels")
-	}
-	createOpts := api.CreateOptions{RemoveOrphans: true, IgnoreOrphans: false, QuietPull: false, Inherit: false}
+
+	createOpts := api.CreateOptions{RemoveOrphans: true, IgnoreOrphans: true, QuietPull: false, Inherit: false, Recreate: "force"}
 	startOpts := api.StartOptions{Project: project, CascadeStop: false, Wait: false}
 
 	opts := api.UpOptions{Start: startOpts, Create: createOpts}
 	log.Debug().Interface("opts", opts).Msg("Up options")
 	composeService := compose.NewComposeService(manager.cli)
+	log.Info().Str("composeFile", composeFile).Interface("project", *project).Msg("Creating project")
+	err = composeService.Create(ctx, project, createOpts)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create project")
+		return err
+	}
+	log.Info().Str("composeFile", composeFile).Msg("Starting project")
 	err = composeService.Up(ctx, project, opts)
+	return err
+}
+
+func (manager *ComposeManager) StopProject(composeFile string) (err error) {
+	log.Info().Str("composeFile", composeFile).Msg("Stop project")
+	ctx := context.TODO()
+	project, err := manager.readComposeFile(composeFile)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to read compose file")
+		return err
+	}
+	opts := api.DownOptions{RemoveOrphans: true, Project: project, Images: "local"}
+	composeService := compose.NewComposeService(manager.cli)
+	err = composeService.Down(ctx, project.Name, opts)
+	return err
+}
+
+func (manager *ComposeManager) RemoveProject(composeFile string) (err error) {
+	log.Info().Str("composeFile", composeFile).Msg("Remove project")
+	ctx := context.TODO()
+	project, err := manager.readComposeFile(composeFile)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to read compose file")
+		return err
+	}
+	opts := api.RemoveOptions{Force: true}
+	composeService := compose.NewComposeService(manager.cli)
+	err = composeService.Remove(ctx, project.Name, opts)
 	return err
 }
 
