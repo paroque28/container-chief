@@ -1,4 +1,4 @@
 projects: 
   wordpress:
     compose_file: wordpress/docker-compose.yml
-    status: "up"
+    status: "pull"

@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"sync"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/paroque28/container-chief/pkg/config"
 	"github.com/paroque28/container-chief/pkg/messages"
@@ -8,6 +10,7 @@ import (
 )
 
 type Manager struct {
+	mu             sync.Mutex
 	backend        string
 	composeManager *ComposeManager
 	// kubernetesManager *KubernetesManager
@@ -20,6 +23,7 @@ func NewManager(configuration config.DaemonConfigurations) (manager *Manager) {
 }
 
 func (manager *Manager) MessageHandler(client mqtt.Client, msg mqtt.Message) {
+	manager.mu.Lock()
 	log.Info().Str("topic", string(msg.Topic())).Msg("Manager received message")
 	configuration, err := messages.JsonToConfiguration(msg.Payload())
 	if err != nil {
@@ -33,5 +37,6 @@ func (manager *Manager) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 	} else {
 		log.Error().Msg("Not Implemented")
 	}
+	manager.mu.Unlock()
 
 }

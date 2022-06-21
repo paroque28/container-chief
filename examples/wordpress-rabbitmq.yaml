@@ -2,3 +2,6 @@ projects:
   wordpress:
     compose_file: wordpress/docker-compose.yml
     status: "up"
+  rabbitmq:
+    compose_file: rabbitmq/docker-compose.yml
+    status: "up"

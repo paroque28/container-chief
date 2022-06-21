@@ -80,7 +80,7 @@ func ReadYaml(path string) (data Configuration, err error) {
 		var files []compose.ConfigFile
 		files = append(files, compose.ConfigFile{Filename: project.ComposeFile, Content: b})
 		envMap := make(map[string]string)
-		// Validate Compose FIle
+		// Validate Compose File
 		_, err := loader.Load(compose.ConfigDetails{
 			WorkingDir:  baseDir,
 			ConfigFiles: files,
