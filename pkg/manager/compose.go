@@ -125,6 +125,7 @@ func (manager *ComposeManager) readComposeFile(composeFile string) (project *typ
 		Environment: envMap,
 	}, withProjectName(path.Base(baseDir)))
 	for i := range project.Services {
+		// Workaround for https://github.com/docker/compose/pull/9579
 		if project.Services[i].CustomLabels == nil {
 			project.Services[i].CustomLabels = make(map[string]string)
 		}
