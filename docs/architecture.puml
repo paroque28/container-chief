@@ -1,0 +1,14 @@
+@startuml architecture
+
+actor user
+node chiefCLI
+node MQTT #orange
+node chiefDaemon
+node dockerDaemon #LightBlue
+
+user -> chiefCLI
+chiefCLI -> MQTT
+MQTT -> chiefDaemon
+chiefDaemon -> dockerDaemon
+
+@enduml
