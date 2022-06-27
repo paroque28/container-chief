@@ -133,12 +133,16 @@ func (manager *ComposeManager) readComposeFile(composeFile string) (project *typ
 	for i := range project.Services {
 		// Workaround for https://github.com/docker/compose/pull/9579
 		if project.Services[i].CustomLabels == nil {
-			project.Services[i].CustomLabels = make(map[string]string)
+			project.Services[i].CustomLabels = map[string]string{
+				api.ProjectLabel:     project.Name,
+				api.ServiceLabel:     project.Services[i].Name,
+				api.VersionLabel:     api.ComposeVersion,
+				api.WorkingDirLabel:  project.WorkingDir,
+				api.ConfigFilesLabel: strings.Join(project.ComposeFiles, ","),
+				api.OneoffLabel:      "False", // default, will be overridden by `run` command
+			}
 		}
 		project.Services[i].CustomLabels["chief.project"] = project.Name
-		project.Services[i].CustomLabels["com.docker.compose.project"] = project.Name
-		project.Services[i].CustomLabels["com.docker.compose.project.config_files"] = fullPath
-		project.Services[i].CustomLabels["com.docker.compose.project.working_dir"] = baseDir
 
 	}
 	log.Debug().Interface("project", project).Msg("readComposeFile")
@@ -168,8 +172,8 @@ func (manager *ComposeManager) StartProject(composeFile string) (err error) {
 		return err
 	}
 
-	createOpts := api.CreateOptions{RemoveOrphans: true, IgnoreOrphans: true, QuietPull: false, Inherit: false, Recreate: "force"}
-	startOpts := api.StartOptions{Project: project, CascadeStop: false, Wait: false}
+	createOpts := api.CreateOptions{RemoveOrphans: true, IgnoreOrphans: true, QuietPull: false, Inherit: false, Recreate: api.RecreateDiverged}
+	startOpts := api.StartOptions{Project: project, CascadeStop: false, Wait: false, AttachTo: project.ServiceNames()}
 
 	opts := api.UpOptions{Start: startOpts, Create: createOpts}
 	log.Debug().Interface("opts", opts).Msg("Up options")
