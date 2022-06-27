@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -92,11 +93,16 @@ func (manager *ComposeManager) removeOrphanProjects(stack []api.Stack, projects 
 		}
 		if !found {
 			log.Info().Str("project", composeProject.Name).Msg("Removing orphan project")
-			err = manager.StopProject(composeProject.ConfigFiles)
-			err = manager.RemoveProject(composeProject.ConfigFiles)
-			if err != nil {
-				log.Error().Err(err).Msg("Failed to remove orphan project")
-				return err
+			composeFile := filepath.Join(manager.servicesPath, composeProject.Name, "docker-compose.yml")
+			if _, err := os.Stat(composeFile); err == nil {
+				err = manager.StopProject(composeFile)
+				err = manager.RemoveProject(composeFile)
+				if err != nil {
+					log.Error().Err(err).Msg("Failed to remove orphan project")
+					return err
+				}
+			} else {
+				log.Info().Str("project", composeProject.Name).Msg("Orphan project not found")
 			}
 		}
 	}
@@ -110,6 +116,9 @@ func withProjectName(name string) func(*loader.Options) {
 }
 
 func (manager *ComposeManager) readComposeFile(composeFile string) (project *types.Project, err error) {
+	if composeFile == "" {
+		return nil, errors.New("composeFile is empty")
+	}
 	fullPath, err := filepath.Abs(composeFile)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get absolute path")
