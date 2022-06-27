@@ -74,24 +74,30 @@ func (manager *ComposeManager) MessageHandler(configuration messages.Configurati
 
 	err = manager.removeOrphanProjects(services, configuration.Projects)
 
+	log.Info().Msg("Compose Manager status updated!")
+
 	return err
 
 }
 
 func (manager *ComposeManager) removeOrphanProjects(stack []api.Stack, projects map[string]messages.Project) (err error) {
 	for _, composeProject := range stack {
-		log.Info().Str("project", composeProject.Name).Msg("removeOrphanProjects")
+		log.Debug().Str("project", composeProject.Name).Msg("removeOrphanProjects")
+		found := false
 		for projectName := range projects {
 			if composeProject.Name == projectName {
-				continue
+				found = true
+				break
 			}
 		}
-		log.Info().Str("project", composeProject.Name).Msg("Remove orphan project")
-		err = manager.StopProject(composeProject.ConfigFiles)
-		err = manager.RemoveProject(composeProject.ConfigFiles)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to remove orphan project")
-			return err
+		if !found {
+			log.Info().Str("project", composeProject.Name).Msg("Removing orphan project")
+			err = manager.StopProject(composeProject.ConfigFiles)
+			err = manager.RemoveProject(composeProject.ConfigFiles)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to remove orphan project")
+				return err
+			}
 		}
 	}
 	return err
