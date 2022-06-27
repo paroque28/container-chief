@@ -1,0 +1,44 @@
+	
+@startuml events
+actor User
+entity CLI
+database MQTT
+queue DaemonMQTTListener
+entity DockerComposeManager
+entity DockerDomposeLibrary
+entity DockerAPI
+
+
+User -> CLI: Send Configuration
+note right
+projects: 
+  wordpress:
+    compose_file: rabbitmq/docker-compose.yml
+    status: "up"
+end note
+CLI -> MQTT: Send Configuration with DockerCompose Contents
+note right
+{
+  "projects":
+    {
+      "wordpress":
+        {
+          "compose_file": "wordpress/docker-compose.yml",
+          "compose": "version: \"3.9\"\\n   ....,
+          "status": "up"
+        }
+    }
+}
+
+end note
+MQTT -> DaemonMQTTListener: Forward Configuration to the Daemon
+DaemonMQTTListener -> DockerComposeManager: Call Docker Compose Handler
+DockerComposeManager -> DockerDomposeLibrary: Get List of Running Services
+DockerDomposeLibrary -> DockerComposeManager: List of services
+DockerComposeManager -> DockerDomposeLibrary: Apply new Docker Compose File Configurations
+DockerDomposeLibrary -> DockerAPI: Call Docker API to create Containers
+DockerDomposeLibrary -> DockerComposeManager: Success
+DockerComposeManager -> DockerDomposeLibrary: Remove Orphan Services
+DockerDomposeLibrary -> DockerComposeManager: Success
+
+@enduml

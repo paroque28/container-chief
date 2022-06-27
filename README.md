@@ -63,3 +63,8 @@ projects:
 And finally the CLI would send this message to the MQTT broker using the following topic:
 
 `chief/devices/<device_id>/configurations`
+
+
+An events diagram would look like this:
+
+![](docs/events.png)
