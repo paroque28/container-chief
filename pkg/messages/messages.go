@@ -70,7 +70,7 @@ func ReadYaml(path string) (data Configuration, err error) {
 			continue
 		}
 		composeFullPath := filepath.Join(baseDir, project.ComposeFile)
-		log.Info().Str("composeFullPath", composeFullPath).Str("composeFile", project.ComposeFile).Msg("Loading compose file")
+		log.Debug().Str("composeFullPath", composeFullPath).Str("composeFile", project.ComposeFile).Msg("Loading compose file")
 
 		var b []byte
 		b, err = os.ReadFile(composeFullPath)

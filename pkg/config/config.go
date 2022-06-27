@@ -63,6 +63,6 @@ func FetchClientConfiguration() (configuration ClientConfigurations, err error) 
 		log.Error().Err(err).Msg("Failed to unmarshal configuration")
 		return configuration, err
 	}
-	log.Info().Str("broker", configuration.Mqtt.CHIEF_MQTT_BROKER).Int("port", configuration.Mqtt.CHIEF_MQTT_PORT).Msg("MQTT configuration")
+	log.Debug().Str("broker", configuration.Mqtt.CHIEF_MQTT_BROKER).Int("port", configuration.Mqtt.CHIEF_MQTT_PORT).Msg("MQTT configuration")
 	return configuration, err
 }

@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to unmarshal configuration")
 	}
-	log.Info().Str("broker", configuration.Mqtt.CHIEF_MQTT_BROKER).Int("port", configuration.Mqtt.CHIEF_MQTT_PORT).Msg("MQTT configuration")
+	log.Debug().Str("broker", configuration.Mqtt.CHIEF_MQTT_BROKER).Int("port", configuration.Mqtt.CHIEF_MQTT_PORT).Msg("MQTT configuration")
 
 	// Parser
 	parser := argparse.NewParser(filepath.Base(os.Args[0]), "Container Chief Client")
@@ -63,6 +63,8 @@ func main() {
 	// Connect to MQTT
 	svr := new(server.Server)
 	svr.Connect(configuration.Mqtt.CHIEF_MQTT_BROKER, configuration.Mqtt.CHIEF_MQTT_PORT, nil, "client-"+uuid.New().String())
+
+	log.Info().Str("topic", messages.GetConfigurationsTopic(*deviceid)).Str("message", string(body)).Str("host", configuration.Mqtt.CHIEF_MQTT_BROKER).Msg("Sending message")
 
 	svr.Publish(messages.GetConfigurationsTopic(*deviceid), messages.QoS, string(body))
 }

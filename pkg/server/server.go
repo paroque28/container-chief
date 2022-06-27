@@ -32,7 +32,7 @@ func (server *Server) Connect(broker string, port int, messagePubHandler mqtt.Me
 	}
 	opts.OnConnect = func(client mqtt.Client) {
 		server.client = client
-		log.Info().Str("broker", server.Broker).Int("port", server.Port).Str("cliendid", clientID).Msg("Connected to MQTT broker")
+		log.Debug().Str("broker", server.Broker).Int("port", server.Port).Str("cliendid", clientID).Msg("Connected to MQTT broker")
 	}
 	opts.OnConnectionLost = func(client mqtt.Client, err error) {
 		server.client = nil
@@ -64,5 +64,5 @@ func (server *Server) Publish(topic string, qos byte, payload string) {
 	}
 	token := server.client.Publish(topic, qos, false, payload)
 	token.Wait()
-	log.Info().Str("topic", topic).Str("payload", payload).Msg("Published message")
+	log.Debug().Str("topic", topic).Str("payload", payload).Msg("Published message")
 }
