@@ -28,8 +28,9 @@ type DockerComposeConfigurations struct {
 }
 
 func setupViper() {
-	viper.SetConfigName("config/default")
-	viper.AddConfigPath(".")
+	viper.SetConfigName("default")
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath("/etc/chiefd")
 	viper.AutomaticEnv()
 	viper.SetConfigType("yml")
 }
