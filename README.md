@@ -1,11 +1,17 @@
-# Container chief
+<!-- title: Container Chief --> 
+- [1. Overview](#1-overview)
+- [2. Architecture](#2-architecture)
+- [3. Getting started](#3-getting-started)
+- [4. Messages](#4-messages)
+
+# 1. Overview
 A MQTT listener that spins up containers based on configuration messages.
 
-## Architecture
+# 2. Architecture
 
 ![](docs/architecture.png)
 
-## Getting started
+# 3. Getting started
 
 Start MQTT broker:
 
@@ -20,7 +26,7 @@ Send a message to the daemon:
 `go run cmd/chief/client.go -i examples/wordpress.yaml -d device1`
 
 
-## Messages
+# 4. Messages
 
 Messages are composed of a list of services and it's corresponding docker-compose content.
 

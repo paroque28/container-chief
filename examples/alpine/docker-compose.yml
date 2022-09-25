@@ -1,0 +1,6 @@
+version: "3.9"
+    
+services:
+  alpine:
+    image: alpine
+    command: sleep 999999

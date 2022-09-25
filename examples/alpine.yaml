@@ -1,0 +1,4 @@
+projects: 
+  alpine:
+    compose_file: alpine/docker-compose.yml
+    status: "up"
